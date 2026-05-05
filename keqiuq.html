@@ -1,0 +1,417 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>小琉球活動預算表</title>
+    <style>
+        :root {
+            --primary: #0277bd;
+            --accent: #d32f2f;
+            --bg: #e3f2fd;
+        }
+        body { font-family: -apple-system, "Microsoft JhengHei", sans-serif; background-color: var(--bg); padding: 12px; color: #333; line-height: 1.4; padding-bottom: 200px; margin: 0; -webkit-tap-highlight-color: transparent; }
+        .card { background: white; border-radius: 20px; padding: 20px; box-shadow: 0 8px 25px rgba(0,0,0,0.1); max-width: 500px; margin: auto; margin-bottom: 20px;}
+        h2 { color: var(--primary); text-align: center; margin-bottom: 5px; font-size: 1.4em; }
+        .subtitle { text-align: center; font-size: 0.85em; color: #757575; margin-bottom: 20px; }
+        
+        .category-title { background: var(--primary); color: white; padding: 5px 15px; border-radius: 50px; font-size: 0.8em; display: inline-block; margin: 15px 0 8px 0; font-weight: bold; }
+        
+        .item { display: flex; align-items: center; padding: 15px 12px; border-bottom: 1px solid #f1f1f1; cursor: pointer; transition: all 0.2s ease; border-radius: 12px; margin-bottom: 2px; }
+        .item:active { background: #f0f0f0; }
+        .item.selected { background: #e1f5fe; border-bottom-color: transparent; }
+        
+        input[type="checkbox"] { width: 22px; height: 22px; margin-right: 12px; accent-color: var(--primary); pointer-events: none; flex-shrink: 0; }
+        
+        .info { flex-grow: 1; }
+        .shop-tag { background: #e1f5fe; color: #01579b; font-size: 0.7em; padding: 2px 8px; border-radius: 4px; font-weight: bold; margin-bottom: 4px; display: inline-block; }
+        .name { font-weight: bold; display: block; font-size: 1.05em; color: #222; }
+        .duration { font-size: 0.8em; color: #d32f2f; font-weight: bold; } 
+        .time-info { font-size: 0.8em; color: var(--primary); font-weight: 500; display: block; margin: 4px 0; line-height: 1.4; }
+        .promo-tag { color: #d32f2f; font-size: 0.75em; font-weight: bold; display: block; margin-bottom: 2px; }
+        .desc { font-size: 0.75em; color: #888; }
+        .price { font-weight: 800; color: var(--accent); font-size: 1.2em; white-space: nowrap; margin-left: 8px; }
+        
+        /* 排程區域 */
+        .schedule-card { background: #fff; border-radius: 20px; padding: 20px; max-width: 500px; margin: auto; border: 2px solid var(--primary); margin-bottom: 20px;}
+        .schedule-item { display: flex; flex-direction: column; padding: 15px 0; border-bottom: 1px dashed #ccc; }
+        .sch-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px; }
+        .sch-name { font-size: 1em; font-weight: bold; color: #333; }
+        .sch-price-tag { font-size: 0.9em; color: var(--accent); font-weight: bold; }
+        .sch-controls { display: flex; align-items: center; gap: 10px; }
+        .sch-drone-tag { font-size: 0.75em; color: #d32f2f; font-weight: bold; min-width: 65px; }
+
+        /* 手機網頁友善輸入框 */
+        select.time-input, input.time-input { 
+            flex-grow: 1;
+            padding: 12px; 
+            border-radius: 10px; 
+            border: 1px solid #ccc; 
+            font-size: 1.1em; 
+            background: #fff;
+            appearance: none;
+            -webkit-appearance: none;
+            text-align: center;
+        }
+        select.time-input { 
+            background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 12 12'%3E%3Cpath fill='%230277bd' d='M6 8.8L1.2 4h9.6L6 8.8z'/%3E%3C/svg%3E"); 
+            background-repeat: no-repeat; 
+            background-position: right 12px center; 
+            padding-right: 35px; 
+        }
+
+        .end-t { font-size: 0.9em; color: #666; font-weight: 500; min-width: 90px; text-align: right; }
+        .conflict { background: #ffebee; border-radius: 10px; animation: blink 1s infinite; }
+        @keyframes blink { 50% { background: #ffcdd2; } }
+
+        .footer-box { position: fixed; bottom: 0; left: 0; right: 0; background: var(--primary); color: white; padding: 16px 20px; box-shadow: 0 -4px 15px rgba(0,0,0,0.15); display: flex; flex-direction: column; align-items: center; z-index: 1000; border-radius: 20px 20px 0 0; }
+        .footer-main { display: flex; justify-content: space-between; align-items: center; width: 100%; max-width: 460px; }
+        .total-price { font-size: 1.6em; font-weight: bold; }
+        .total-time { font-size: 0.85em; opacity: 0.9; margin-top: 2px; }
+        .reset-btn { background: rgba(255,255,255,0.2); border: 1px solid white; color: white; padding: 8px 15px; border-radius: 10px; font-size: 0.85em; }
+    </style>
+</head>
+<body>
+
+<div class="card">
+    <h2>🌊 小琉球活動預算表</h2>
+    <div class="subtitle">點擊整列活動即可選取 (單人報價)</div>
+
+    <div class="category-title">獨木舟與 SUP (馬帝森)</div>
+    
+    <div class="item" onclick="toggleItem(this)">
+        <input type="checkbox" data-name="一般獨木舟" data-time="90" data-slots="08:00,10:00,13:00,15:00,17:00" data-drone="true" value="550">
+        <div class="info">
+            <span class="shop-tag">馬帝森</span>
+            <span class="name">一般獨木舟 <span class="duration">約 1.5 小時</span></span>
+            <span class="promo-tag">★ 08:00 / 10:00 / 13:00 含免費空拍</span>
+            <span class="time-info">場次：08:00 / 10:00 / 13:00 / 15:00 / 17:00</span>
+            <span class="desc">單人價 $550</span>
+        </div>
+        <span class="price">$550</span>
+    </div>
+
+    <div class="item" onclick="toggleItem(this)">
+        <input type="checkbox" data-name="透明獨木舟" data-time="90" data-slots="08:00,10:00,13:00,15:00,17:00" data-drone="true" value="750">
+        <div class="info">
+            <span class="shop-tag">馬帝森</span>
+            <span class="name">透明獨木舟 <span class="duration">約 1.5 小時</span></span>
+            <span class="promo-tag">★ 08:00 / 10:00 / 13:00 含免費空拍</span>
+            <span class="time-info">場次：08:00 / 10:00 / 13:00 / 15:00 / 17:00</span>
+            <span class="desc">單人價 $750</span>
+        </div>
+        <span class="price">$750</span>
+    </div>
+
+    <div class="item" onclick="toggleItem(this)">
+        <input type="checkbox" data-name="SUP(二人一板)" data-time="90" data-slots="08:00,10:00,13:00,15:00,17:00" data-drone="true" value="900">
+        <div class="info">
+            <span class="shop-tag">馬帝森</span>
+            <span class="name">SUP 立槳 (兩人一板) <span class="duration">約 1.5 小時</span></span>
+            <span class="promo-tag">★ 08:00 / 10:00 / 13:00 含免費空拍</span>
+            <span class="time-info">場次：08:00 / 10:00 / 13:00 / 15:00 / 17:00</span>
+            <span class="desc">單人負擔 $900</span>
+        </div>
+        <span class="price">$900</span>
+    </div>
+
+    <div class="item" onclick="toggleItem(this)">
+        <input type="checkbox" data-name="SUP(一人一板)" data-time="90" data-slots="08:00,10:00,13:00,15:00,17:00" data-drone="true" value="1150">
+        <div class="info">
+            <span class="shop-tag">馬帝森</span>
+            <span class="name">SUP 立槳 (一人一板) <span class="duration">約 1.5 小時</span></span>
+            <span class="promo-tag">★ 08:00 / 10:00 / 13:00 含免費空拍</span>
+            <span class="time-info">場次：08:00 / 10:00 / 13:00 / 15:00 / 17:00</span>
+            <span class="desc">單人價 $1150</span>
+        </div>
+        <span class="price">$1150</span>
+    </div>
+
+    <div class="category-title">其他水上行程</div>
+    
+    <div class="item" onclick="toggleItem(this)">
+        <input type="checkbox" data-name="玻璃船" data-time="45" data-slots="08:45,09:45,11:20,12:10,13:20,14:45,16:10" value="250">
+        <div class="info">
+            <span class="shop-tag">藍鯨號</span>
+            <span class="name">玻璃船 <span class="duration">約 45 分鐘</span></span>
+            <span class="time-info">場次：08:45 / 09:45 / 11:20 / 12:10 / 13:20 / 14:45 / 16:10</span>
+            <span class="desc">單人價 $250</span>
+        </div>
+        <span class="price">$250</span>
+    </div>
+
+    <div class="item" onclick="toggleItem(this)">
+        <input type="checkbox" data-name="浮潛" data-time="90" data-slots="08:00,09:00,10:00,11:00,13:00,14:00,15:00" value="400">
+        <div class="info">
+            <span class="name">浮潛 <span class="duration">約 1.5 小時</span></span>
+            <span class="time-info">場次：08:00 / 09:00 / 10:00 / 11:00 / 13:00 / 14:00 / 15:00</span>
+            <span class="desc">單人價 $400</span>
+        </div>
+        <span class="price">$400</span>
+    </div>
+
+    <div class="item" onclick="toggleItem(this)">
+        <input type="checkbox" data-name="衝浪(二人)" data-time="60" data-slots="08:00,09:00,10:00,11:00,13:00,14:00,15:00" value="425">
+        <div class="info">
+            <span class="shop-tag">送粽基</span>
+            <span class="name">衝浪浮板 (兩人一板) <span class="duration">約 1 小時</span></span>
+            <span class="time-info">場次：08:00 / 09:00 / 10:00 / 11:00 / 13:00 / 14:00 / 15:00</span>
+            <span class="desc">$850/板，單人負擔 $425</span>
+        </div>
+        <span class="price">$425</span>
+    </div>
+
+    <div class="item" onclick="toggleItem(this)">
+        <input type="checkbox" data-name="衝浪(一人)" data-time="60" data-slots="08:00,09:00,10:00,11:00,13:00,14:00,15:00" value="650">
+        <div class="info">
+            <span class="shop-tag">送粽基</span>
+            <span class="name">衝浪浮板 (一人一板) <span class="duration">約 1 小時</span></span>
+            <span class="time-info">場次：08:00 / 09:00 / 10:00 / 11:00 / 13:00 / 14:00 / 15:00</span>
+            <span class="desc">單人價 $650</span>
+        </div>
+        <span class="price">$650</span>
+    </div>
+
+    <div class="item" onclick="toggleItem(this)">
+        <input type="checkbox" data-name="海上自行車" data-time="60" data-slots="07:00,09:00,11:00,13:00,15:00,17:00" value="1200">
+        <div class="info">
+            <span class="shop-tag">水行俠</span>
+            <span class="name">海上自行車 <span class="duration">約 1 小時</span></span>
+            <span class="time-info">場次：07:00 / 09:00 / 11:00 / 13:00 / 15:00 / 17:00</span>
+            <span class="desc">單人價 $1200</span>
+        </div>
+        <span class="price">$1200</span>
+    </div>
+
+    <div class="item" onclick="toggleItem(this)">
+        <input type="checkbox" data-name="體驗潛水" data-time="120" data-slots="08:00,10:00,11:20,13:00,15:00,16:30" value="2500">
+        <div class="info">
+            <span class="shop-tag">Sea You Liupiu</span>
+            <span class="name">體驗潛水 (無證照) <span class="duration">約 2 小時</span></span>
+            <span class="time-info">場次：08:00 / 10:00 / 11:20 / 13:00 / 15:00 / 16:30</span>
+            <span class="desc">需預訂 | 單人價 $2500</span>
+        </div>
+        <span class="price">$2500</span>
+    </div>
+
+    <div class="category-title">陸地行程與美食</div>
+
+    <div class="item" onclick="toggleItem(this)">
+        <input type="checkbox" data-name="卡丁車(單)" data-time="0" data-slots="flex" value="300">
+        <div class="info">
+            <span class="shop-tag">卡丁車</span>
+            <span class="name">單人座</span>
+            <span class="desc">單人一台 $300</span>
+        </div>
+        <span class="price">$300</span>
+    </div>
+
+    <div class="item" onclick="toggleItem(this)">
+        <input type="checkbox" data-name="卡丁車(雙)" data-time="0" data-slots="flex" value="175">
+        <div class="info">
+            <span class="shop-tag">卡丁車</span>
+            <span class="name">親子雙人座</span>
+            <span class="desc">$350/台，單人負擔 $175</span>
+        </div>
+        <span class="price">$175</span>
+    </div>
+
+    <div class="item" onclick="toggleItem(this)">
+        <input type="checkbox" data-name="潮間帶" data-time="45" data-slots="tide" value="150">
+        <div class="info">
+            <span class="shop-tag">當地導覽</span>
+            <span class="name">潮間帶導覽 <span class="duration">約 45 分鐘</span></span>
+            <span class="time-info">時間視潮汐待定</span>
+            <span class="desc">單人價 $150</span>
+        </div>
+        <span class="price">$150</span>
+    </div>
+
+    <div class="item" onclick="toggleItem(this)">
+        <input type="checkbox" data-name="夜間導覽" data-time="0" data-slots="flex" value="150">
+        <div class="info">
+            <span class="shop-tag">當地導覽</span>
+            <span class="name">夜間導覽</span>
+            <span class="desc">單人價 $150</span>
+        </div>
+        <span class="price">$150</span>
+    </div>
+
+    <div class="item" onclick="toggleItem(this)">
+        <input type="checkbox" data-name="BBQ烤肉" data-time="120" data-slots="17:00,18:00,19:00" value="400">
+        <div class="info">
+            <span class="shop-tag">筑安心</span>
+            <span class="name">BBQ 烤肉吃到飽</span>
+            <span class="time-info">場次：17:00 / 18:00 / 19:00</span>
+            <span class="desc">單人價 $400</span>
+        </div>
+        <span class="price">$400</span>
+    </div>
+</div>
+
+<div class="schedule-card" id="scheduleBox" style="display:none;">
+    <h3 style="margin:0 0 15px 0; color:var(--primary); font-size:1.1em; text-align:center;">📅 行程時間排定</h3>
+    <div id="scheduleList"></div>
+</div>
+
+<div class="footer-box">
+    <div class="footer-main">
+        <div style="display: flex; flex-direction: column;">
+            <div class="total-price" id="totalDisplay">總計: $0</div>
+            <div class="total-time" id="totalTimeDisplay">預計耗時: 0 分鐘</div>
+        </div>
+        <button class="reset-btn" onclick="resetAll()">重設</button>
+    </div>
+</div>
+
+<script>
+    function toggleItem(el) {
+        const checkbox = el.querySelector('input[type="checkbox"]');
+        checkbox.checked = !checkbox.checked;
+        el.classList.toggle('selected', checkbox.checked);
+        calculate();
+    }
+
+    function calculate() {
+        let total = 0;
+        let totalMinutes = 0;
+        let selected = [];
+        const checkboxes = document.querySelectorAll('input[type="checkbox"]');
+        
+        checkboxes.forEach(cb => {
+            if (cb.checked) {
+                total += parseInt(cb.value);
+                const duration = parseInt(cb.getAttribute('data-time') || 0);
+                totalMinutes += duration;
+                
+                selected.push({
+                    name: cb.getAttribute('data-name'),
+                    price: cb.value,
+                    duration: duration,
+                    slots: cb.getAttribute('data-slots'),
+                    canDrone: cb.getAttribute('data-drone') === 'true'
+                });
+            }
+        });
+
+        document.getElementById('totalDisplay').innerText = '總計: $' + total.toLocaleString();
+        
+        const timeDisplay = document.getElementById('totalTimeDisplay');
+        if (totalMinutes === 0) {
+            timeDisplay.innerText = '預計耗時: 0 分鐘';
+        } else if (totalMinutes >= 60) {
+            const h = Math.floor(totalMinutes / 60);
+            const m = totalMinutes % 60;
+            timeDisplay.innerText = `預計耗時: ${h} 小時 ${m > 0 ? m + ' 分鐘' : ''}`;
+        } else {
+            timeDisplay.innerText = `預計耗時: ${totalMinutes} 分鐘`;
+        }
+
+        renderSchedule(selected);
+    }
+
+    function renderSchedule(items) {
+        const box = document.getElementById('scheduleBox');
+        const list = document.getElementById('scheduleList');
+        if (items.length === 0) { 
+            box.style.display = 'none'; 
+            return; 
+        }
+        
+        box.style.display = 'block';
+        list.innerHTML = '';
+
+        items.forEach((item) => {
+            const row = document.createElement('div');
+            row.className = 'schedule-item sch-row';
+            row.dataset.duration = item.duration;
+            row.dataset.candrone = item.canDrone;
+            
+            let inputHtml = '';
+            if (item.slots === 'flex') {
+                inputHtml = `<input type="time" class="time-input" onchange="updateTimes()">`;
+            } else if (item.slots === 'tide') {
+                inputHtml = `<span style="font-size:0.9em; color:#888; flex-grow:1; text-align:center;">(依潮汐決定)</span><input type="hidden" class="time-input" value="">`;
+            } else {
+                let optionsArray = item.slots.split(',');
+                let options = optionsArray.map(s => `<option value="${s}">${s}</option>`).join('');
+                inputHtml = `<select class="time-input" onchange="updateTimes()">${options}</select>`;
+            }
+            
+            row.innerHTML = `
+                <div class="sch-header">
+                    <span class="sch-name">${item.name}</span>
+                    <span class="sch-price-tag">$${item.price}</span>
+                </div>
+                <div class="sch-controls">
+                    <div class="sch-drone-tag" id="drone-${item.name}"></div>
+                    ${inputHtml}
+                    <span class="end-t"></span>
+                </div>
+            `;
+            list.appendChild(row);
+        });
+        updateTimes();
+    }
+
+    function updateTimes() {
+        const rows = document.querySelectorAll('.sch-row');
+        const ranges = [];
+
+        rows.forEach(row => {
+            const timeInput = row.querySelector('.time-input');
+            const endText = row.querySelector('.end-t');
+            const droneTag = row.querySelector('.sch-drone-tag');
+            const duration = parseInt(row.dataset.duration);
+            const canDrone = row.dataset.candrone === 'true';
+            let startStr = timeInput ? timeInput.value : '';
+
+            if (canDrone && (startStr === '08:00' || startStr === '10:00' || startStr === '13:00')) {
+                droneTag.innerText = '📸 含空拍';
+            } else {
+                droneTag.innerText = '';
+            }
+
+            if (startStr && startStr !== '') {
+                const [h, m] = startStr.split(':').map(Number);
+                const startMins = h * 60 + m;
+                
+                if (duration > 0) {
+                    const endMins = startMins + duration;
+                    const eh = Math.floor(endMins / 60) % 24;
+                    const em = endMins % 60;
+                    const endStr = `${String(eh).padStart(2, '0')}:${String(em).padStart(2, '0')}`;
+                    endText.innerText = `~ ${endStr}`;
+                    ranges.push({ s: startMins, e: endMins, el: row });
+                } else {
+                    endText.innerText = `~彈性`;
+                }
+            } else {
+                endText.innerText = '';
+            }
+        });
+
+        rows.forEach(r => r.classList.remove('conflict'));
+        for (let i = 0; i < ranges.length; i++) {
+            for (let j = i + 1; j < ranges.length; j++) {
+                if (ranges[i].s < ranges[j].e && ranges[j].s < ranges[i].e) {
+                    ranges[i].el.classList.add('conflict');
+                    ranges[j].el.classList.add('conflict');
+                }
+            }
+        }
+    }
+
+    function resetAll() {
+        if(confirm('確定要清除所有選取的項目嗎？')) {
+            document.querySelectorAll('.item').forEach(item => {
+                item.classList.remove('selected');
+                item.querySelector('input').checked = false;
+            });
+            calculate();
+        }
+    }
+</script>
+
+</body>
+</html>
